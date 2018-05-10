@@ -10,7 +10,7 @@ class Net(object):
 	def __init__(self, sess, args):
 		self.sess = sess
 		self.select_net = args.select_net
-		if self.select_net == 'slim':
+		if self.select_net == 'cnn_batch_norm':
 			self.net_num = 0 # slim
 		else:
 			self.net_num = 1 # just cnn
@@ -60,10 +60,12 @@ class Net(object):
 		self.pred_label = tf.argmax(self.hypothesis, 1)
 		self.predicted = tf.equal(tf.argmax(self.hypothesis, 1), tf.argmax(self.Y, 1))
 		self.accuracy = tf.reduce_mean(tf.cast(self.predicted, tf.float32))
+	
 		
 	def train(self):
 		self.init_op = tf.global_variables_initializer()
 		self.sess.run(self.init_op)
+		
 		
 		
 		for step in range(self.epoch):
@@ -81,33 +83,42 @@ class Net(object):
 				self.total_cost += self.c / self.total_batch
 				print('\rNow training : {}/{}'.format(i+1, self.total_batch),end = '')
 			print('\t')
-			print('Epoch : {}, Cost_avg for each batch_size = {:4f}'.format(step, self.total_cost))	
+			print('Epoch : {}, Cost_avg = {:4f}'.format(step, self.total_cost))	
 			
-			
-			self.val_acc = self.sess.run([self.accuracy],feed_dict={self.X: self.mnist.validation.images, self.Y: self.mnist.validation.labels,
-			self.is_training: False, self.keep_prob: 1})
-			print('validation_acc : {}'.format(self.val_acc))
+			self.total_val_acc = 0
+			self.total_batch = int(self.mnist.validation.num_examples/self.batch_size)
+			for i in range(self.total_batch):
+				self.batch_xs, self.batch_ys = self.mnist.validation.images[i*self.batch_size: (i+1)*self.batch_size], self.mnist.validation.labels[i*self.batch_size: (i+1)*self.batch_size]
 				
-		self.train_acc = self.sess.run([self.accuracy],feed_dict={self.X: self.mnist.train.images, self.Y: self.mnist.train.labels,
-			 self.is_training: False, self.keep_prob: 1})
+				self.val_acc = self.sess.run(self.accuracy,feed_dict={self.X: self.batch_xs, self.Y: self.batch_ys,				
+				self.is_training: False, self.keep_prob: 1})
+				
 		
+				self.total_val_acc += self.val_acc / self.total_batch
+				
+			print('validation_acc : {}'.format(self.total_val_acc))
 		
-		print('Accuracy of dataset(train) : {}'.format(self.train_acc))
+		self.total_train_acc = 0
+		self.total_batch = int(self.mnist.train.num_examples/self.batch_size)
+		for i in range(self.total_batch):	
+		
+			self.batch_xs, self.batch_ys = self.mnist.train.next_batch(self.batch_size)
+			self.train_acc = self.sess.run(self.accuracy,feed_dict={self.X: self.batch_xs, self.Y: self.batch_ys,
+				self.is_training: False, self.keep_prob: 1})
+			self.total_train_acc += self.train_acc / self.total_batch
+		
+		print('Accuracy of dataset(train) : {}'.format(self.total_train_acc))
 
 	def test(self):
-		
-		self.test_acc = self.sess.run([self.accuracy],feed_dict={self.X: self.mnist.test.images, self.Y: self.mnist.test.labels,
-			self.is_training: False, self.keep_prob: 1})
+	
+		self.total_test_acc = 0
+		self.total_batch = int(self.mnist.test.num_examples/self.batch_size)
+		for i in range(self.total_batch):
+			self.batch_xs, self.batch_ys = self.mnist.test.images[i*self.batch_size: (i+1)*self.batch_size], self.mnist.test.labels[i*self.batch_size: (i+1)*self.batch_size]
+			self.test_acc = self.sess.run(self.accuracy,feed_dict={self.X: self.batch_xs, self.Y: self.batch_ys ,
+				self.is_training: False, self.keep_prob: 1})
+			self.total_test_acc += self.test_acc / self.total_batch
 
 		
-		print('Accuracy of dataset(test) : {}'.format(self.test_acc))
+		print('Accuracy of dataset(test) : {}'.format(self.total_test_acc))
 			
-
-			
-		
-		
-		
-		
-		
-		
-		

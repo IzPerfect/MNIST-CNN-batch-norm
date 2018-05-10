@@ -26,7 +26,7 @@ Optional
 Results
 ---
 `python main.py cnn_batch_norm`
-
+![result](/image/cnn_batch_norm(epoch30).PNG)
 
 Reference Implementations
 ---
