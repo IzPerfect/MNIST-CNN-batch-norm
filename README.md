@@ -1,6 +1,8 @@
 MNIST_CNN_batch_norm
 ===
-Classification of MNIST_data using CNN or batch normalized cnn
+Classification of MNIST_data using CNN or batch normalized CNN
+
+Train CNN with TF-slim which can batch normalization
 
 Usage
 ---
